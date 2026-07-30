@@ -24,7 +24,7 @@ def fetch_tech_jobs(country: str = "us", what: str = "software engineer", result
 
     out: list[dict] = []
     for j in resp.json().get("results", []):
-        if not is_tech_text(f"{j.get('title','')} {j.get('description','')}"):
+        if not is_tech_text(j.get("title", ""), j.get("description", "")):
             continue
         out.append(
             {

@@ -1,5 +1,7 @@
 import httpx
 
+from app.sourcing.base import clean_text
+
 """Hacker News "Ask HN: Who is hiring?" monthly thread.
 
 No API key, just the public Algolia HN search. Great for early-stage tech jobs.
@@ -25,7 +27,7 @@ def fetch_tech_jobs(month_tag: str = "") -> list[dict]:
     out: list[dict] = []
     for h in resp.json().get("hits", []):
         text = h.get("comment_text", "") or ""
-        first_line = text.split("\n", 1)[0][:120]
+        first_line = clean_text(text.split("\n", 1)[0])[:120]
         out.append(
             {
                 "source": "hn",
@@ -35,7 +37,7 @@ def fetch_tech_jobs(month_tag: str = "") -> list[dict]:
                 "location": None,
                 "remote": None,
                 "url": f"https://news.ycombinator.com/item?id={h['objectID']}",
-                "description": text[:5000],
+                "description": clean_text(text)[:5000],
             }
         )
     return out

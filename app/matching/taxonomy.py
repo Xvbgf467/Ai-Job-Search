@@ -48,6 +48,10 @@ ROLE_KEYWORDS: dict[TechRole, list[str]] = {
 ALL_TECH_ROLES = set(ROLE_KEYWORDS.keys())
 
 
-def is_tech_text(text: str) -> bool:
-    lowered = text.lower()
-    return any(any(kw in lowered for kw in kws) for kws in ROLE_KEYWORDS.values())
+def is_tech_text(title: str, description: str = "") -> bool:
+    title_l = (title or "").lower()
+    if any(any(kw in title_l for kw in kws) for kws in ROLE_KEYWORDS.values()):
+        return True
+    desc_l = (description or "").lower()
+    hits = sum(any(kw in desc_l for kw in kws) for kws in ROLE_KEYWORDS.values())
+    return hits >= 2

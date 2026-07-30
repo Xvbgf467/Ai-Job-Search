@@ -16,7 +16,7 @@ WEIGHTS = {"keyword": 0.4, "embedding": 0.4, "llm": 0.2}
 
 def score_candidates(resume: Resume, jobs: list[Job]) -> list[dict]:
     # 1. tech-only filter: drop non-tech postings early
-    tech_jobs = [j for j in jobs if is_tech_text(f"{j.title} {j.description}")]
+    tech_jobs = [j for j in jobs if is_tech_text(j.title, j.description)]
     if not tech_jobs:
         return []
 

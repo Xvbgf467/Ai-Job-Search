@@ -1,5 +1,16 @@
+import html
+import re
 from abc import ABC, abstractmethod
 from typing import Any
+
+
+def clean_text(value: str | None) -> str | None:
+    """Strip HTML tags and decode entities from scraped/API text."""
+    if not value:
+        return value
+    value = re.sub(r"<[^>]+>", " ", value)
+    value = html.unescape(value)
+    return re.sub(r"\s+", " ", value).strip()
 
 
 class JobSource(ABC):

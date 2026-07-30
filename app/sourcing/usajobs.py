@@ -25,7 +25,7 @@ def fetch_tech_jobs(keyword: str = "IT Specialist", results: int = 50) -> list[d
     for item in resp.json().get("SearchResult", {}).get("SearchResultItems", []):
         j = item.get("MatchedObjectDescriptor", {})
         title = j.get("PositionTitle", "")
-        if not is_tech_text(f"{title} {j.get('QualificationSummary','')}"):
+        if not is_tech_text(title, j.get("QualificationSummary", "")):
             continue
         out.append(
             {

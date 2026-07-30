@@ -1,6 +1,7 @@
 import httpx
 
 from app.matching.taxonomy import is_tech_text
+from app.sourcing.base import clean_text
 
 BASE = "https://remotive.com/api/remote-jobs"
 
@@ -13,18 +14,18 @@ def fetch_tech_jobs() -> list[dict]:
 
     out: list[dict] = []
     for j in jobs:
-        if not is_tech_text(f"{j.get('title','')} {j.get('description','')}"):
+        if not is_tech_text(j.get("title", ""), j.get("description", "")):
             continue
         out.append(
             {
                 "source": "remotive",
                 "external_id": str(j.get("id")),
-                "title": j.get("title", "").strip(),
+                "title": clean_text(j.get("title", "")),
                 "company": j.get("company_name"),
                 "location": j.get("candidate_required_location"),
                 "remote": True,
                 "url": j.get("url"),
-                "description": j.get("description", "")[:5000],
+                "description": clean_text(j.get("description", ""))[:5000],
             }
         )
     return out
