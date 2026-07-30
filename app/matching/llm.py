@@ -15,7 +15,7 @@ from app.config import settings
 _SYSTEM = (
     "You are a senior tech recruiter. Given a candidate's resume and a list of "
     "tech job postings, rate how well each job fits the candidate from 0.0 to 1.0 "
-    "and give a one-sentence rationale. Respond ONLY with compact JSON."
+    "and give a rationale of at most 8 words. Respond ONLY with compact JSON."
 )
 
 _USER_TMPL = """CANDIDATE RESUME:
@@ -31,7 +31,12 @@ Rate every job id listed. score in [0,1]."""
 
 
 def _client() -> OpenAI:
-    return OpenAI(api_key=settings.llm_api_key, base_url=settings.llm_base_url or None)
+    return OpenAI(
+        api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url or None,
+        timeout=settings.llm_timeout,
+        max_retries=1,
+    )
 
 
 def _parse_results(text: str) -> list[dict]:
@@ -57,7 +62,7 @@ def rerank(resume_text: str, jobs: list[dict]) -> list[dict]:
     # stable 1..N ids to avoid JSON type drift, map back at the end
     indexed = list(enumerate(jobs, start=1))
     jobs_block = "\n".join(
-        f"{i} | {j.get('title','')[:120]} | {(j.get('description','') or '')[:600]}"
+        f"{i} | {j.get('title','')[:120]} | {(j.get('description','') or '')[:240]}"
         for i, j in indexed
     )
 
@@ -65,14 +70,14 @@ def rerank(resume_text: str, jobs: list[dict]) -> list[dict]:
         resp = _client().chat.completions.create(
             model=settings.llm_model,
             temperature=0.2,
-            max_tokens=4096,
+            max_tokens=2048,
             extra_body={"thinking": {"type": "disabled"}},
             messages=[
                 {"role": "system", "content": _SYSTEM},
                 {
                     "role": "user",
                     "content": _USER_TMPL.format(
-                        resume=resume_text[:3000], jobs=jobs_block
+                        resume=resume_text[:2000], jobs=jobs_block
                     ),
                 },
             ],

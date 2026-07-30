@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     llm_base_url: str = ""        # zai: https://api.z.ai/api/paas/v4/
     llm_api_key: str = ""         # LLM_API_KEY
     llm_rerank_top_n: int = 20
+    llm_timeout: float = 30.0     # hard cap so a stalled provider can't hang the request
 
     @property
     def llm_enabled(self) -> bool:

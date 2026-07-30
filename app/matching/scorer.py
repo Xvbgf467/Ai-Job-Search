@@ -7,7 +7,7 @@ Pipeline:
 """
 
 from app.db.models import Job, Resume
-from app.matching import embeddings, keywords, llm
+from app.matching import embeddings, keywords, llm, seniority
 from app.matching.taxonomy import is_tech_text
 from app.config import settings
 
@@ -22,18 +22,24 @@ def score_candidates(resume: Resume, jobs: list[Job]) -> list[dict]:
 
     # 2. per-job keyword + embedding scores
     resume_vec = embeddings.embed(resume.raw_text)
+    job_texts = [f"{job.title}\n{job.description}" for job in tech_jobs]
+    job_vecs = embeddings.embed_batch(job_texts) if job_texts else []
+    cand_level = seniority.years_to_level(resume.years_experience)
+
     candidates: list[dict] = []
 
-    for job in tech_jobs:
-        job_text = f"{job.title}\n{job.description}"
+    for idx, job in enumerate(tech_jobs):
+        job_text = job_texts[idx]
         kw = 0.5 * keywords.keyword_score(resume, job_text) + 0.5 * keywords.skill_overlap(resume, job_text)
-        emb = embeddings.similarity(resume_vec, embeddings.embed(job_text))
+        emb = embeddings.similarity(resume_vec, job_vecs[idx])
+        factor = seniority.level_factor(cand_level, job.title)
         candidates.append(
             {
                 "job_id": job.id,
                 "keyword_score": kw,
                 "embedding_score": emb,
-                "score": WEIGHTS["keyword"] * kw + WEIGHTS["embedding"] * emb,
+                "level_factor": factor,
+                "score": (WEIGHTS["keyword"] * kw + WEIGHTS["embedding"] * emb) * factor,
             }
         )
 
@@ -67,7 +73,7 @@ def score_candidates(resume: Resume, jobs: list[Job]) -> list[dict]:
                 WEIGHTS["keyword"] * c["keyword_score"]
                 + WEIGHTS["embedding"] * c["embedding_score"]
                 + WEIGHTS["llm"] * c["llm_score"]
-            )
+            ) * c["level_factor"]
 
     candidates = sorted(by_id.values(), key=lambda m: m["score"], reverse=True)
     return candidates

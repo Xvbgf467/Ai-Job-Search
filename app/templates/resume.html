@@ -1,18 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Upload your resume</h1>
-
-<style>
-  .htmx-indicator{opacity:0;transition:opacity 200ms ease-in}
-  .htmx-request .htmx-indicator,.htmx-indicator.htmx-request{opacity:1}
-</style>
+<h1 class="text-2xl font-bold mb-1">Upload your resume</h1>
+<p class="text-sm text-slate-500 mb-4">Matching against <strong>{{ job_count }}</strong> live tech jobs.</p>
 
 <form
+  id="matchForm"
   hx-post="/match"
   hx-encoding="multipart/form-data"
   hx-target="#out"
-  hx-indicator="#spin"
-  hx-disabled-elt="button"
+  hx-indicator="#loading"
+  hx-disabled-elt="#submitBtn"
   class="space-y-4 max-w-md"
 >
   <label class="block">
@@ -31,16 +28,45 @@
   </label>
 
   <label class="block">
+    <span class="text-sm text-slate-600">Years of experience (optional)</span>
+    <input type="number" name="years_experience" min="0" max="45" placeholder="auto-detect from resume"
+           class="mt-1 w-full border rounded px-3 py-2">
+    <span class="text-xs text-slate-400">0 = intern · 1–2 junior · 3–5 mid · 6–8 senior · 9+ lead</span>
+  </label>
+
+  <label class="block">
     <span class="text-sm text-slate-600">Resume file (PDF / DOCX / TXT)</span>
     <input type="file" name="file" accept=".pdf,.docx,.txt" required
            class="mt-1 w-full border rounded px-3 py-2">
   </label>
 
-  <button class="px-4 py-2 bg-slate-900 text-white rounded">
+  <button id="submitBtn" type="submit"
+          class="px-4 py-2 bg-slate-900 text-white rounded disabled:opacity-60 disabled:cursor-not-allowed">
     Parse &amp; Match
-    <span id="spin" class="htmx-indicator ml-2 text-amber-300">matching…</span>
   </button>
 </form>
 
-<div id="out" class="mt-6"></div>
+<div id="out" class="mt-6">
+  <div id="loading" class="htmx-indicator hidden">
+    <div class="flex items-center gap-3 p-4 border rounded-lg bg-slate-50">
+      <svg class="animate-spin h-5 w-5 text-slate-600" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z"></path>
+      </svg>
+      <div>
+        <div class="font-medium text-slate-700">Parsing &amp; ranking jobs…</div>
+        <div class="text-xs text-slate-500">Reading your resume, scoring skills + semantic match, then AI re-ranking. Usually ~10s.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.body.addEventListener("htmx:responseError", function () {
+    const out = document.getElementById("out");
+    out.innerHTML =
+      '<div class="p-4 border rounded-lg bg-red-50 text-red-700">' +
+      "Something went wrong (timeout or server error). The AI step can be slow — please try again.</div>";
+  });
+</script>
 {% endblock %}

@@ -14,7 +14,12 @@ _ALLOWED = {".pdf", ".docx", ".txt"}
 
 
 async def ingest_upload(
-    db: Session, *, name: str, target_role: str | None, file: UploadFile
+    db: Session,
+    *,
+    name: str,
+    target_role: str | None,
+    file: UploadFile,
+    years_experience: int | None = None,
 ) -> Resume:
     suffix = "." + (file.filename or "").rsplit(".", 1)[-1].lower()
     if suffix not in _ALLOWED:
@@ -29,7 +34,7 @@ async def ingest_upload(
         raw_text=text,
         target_role=TechRole(target_role) if target_role else profile.target_role,
         skills=",".join(profile.skills),
-        years_experience=profile.years_experience,
+        years_experience=years_experience if years_experience is not None else profile.years_experience,
         location=profile.location,
     )
     db.add(resume)

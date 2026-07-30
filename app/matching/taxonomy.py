@@ -5,6 +5,8 @@ ROLE_KEYWORDS maps each TechRole to signals used for tech-role filtering.
 Extend these as the project grows.
 """
 
+import re
+
 from app.db.models import TechRole
 
 SKILL_TERMS: dict[str, str] = {
@@ -46,6 +48,32 @@ ROLE_KEYWORDS: dict[TechRole, list[str]] = {
 }
 
 ALL_TECH_ROLES = set(ROLE_KEYWORDS.keys())
+
+_NOISE_ALIASES = {"py"}  # short aliases prone to false positives
+
+# Stripped alias -> canonical, used to build one boundary-aware regex so that
+# e.g. "go" doesn't match "logo" and "java" doesn't match "javascript".
+_STRIPPED: dict[str, str] = {
+    a.strip(): c for a, c in SKILL_TERMS.items() if a.strip() and a.strip() not in _NOISE_ALIASES
+}
+_SKILL_RE = re.compile(
+    r"(?<![a-z0-9])(" + "|".join(re.escape(a) for a in sorted(_STRIPPED, key=len, reverse=True)) + r")(?![a-z0-9])"
+)
+
+
+def extract_skills(text: str, limit: int = 12) -> list[str]:
+    """Detect canonical skills mentioned in `text`, with word-boundary matching."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for m in _SKILL_RE.finditer((text or "").lower()):
+        canonical = _STRIPPED.get(m.group(1))
+        if not canonical or canonical.lower() in seen:
+            continue
+        seen.add(canonical.lower())
+        out.append(canonical)
+        if len(out) >= limit:
+            break
+    return out
 
 
 def is_tech_text(title: str, description: str = "") -> bool:

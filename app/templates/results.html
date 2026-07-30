@@ -1,27 +1,35 @@
-<div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h2 class="text-xl font-bold">{{ matches|length }} matched tech jobs</h2>
-    <span class="text-sm text-slate-500">for {{ resume.name }}</span>
+<div id="results" class="space-y-4">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <h2 class="text-xl font-bold">{{ results|length }} matched tech jobs
+      <span class="text-sm font-normal text-slate-500">for {{ resume.name }}</span>
+      {% if candidate_level %}
+      <span class="ml-2 align-middle text-xs font-semibold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">{{ candidate_level }}{% if years is not none %} · {{ years }}y{% endif %}</span>
+      {% endif %}
+    </h2>
+    <div class="flex gap-2 text-sm" id="sortBar">
+      <button data-sort="score" class="sort-btn px-3 py-1 rounded border bg-slate-900 text-white">Best match</button>
+      <button data-sort="date" class="sort-btn px-3 py-1 rounded border">Newest</button>
+    </div>
   </div>
 
-  {% if not matches %}
+  {% if not results %}
     <div class="p-6 border rounded-lg text-slate-400 text-center">
-      No jobs in the pool yet. Fetch jobs first.
+      No matching jobs yet. Try fetching fresh jobs, or a different resume / role.
     </div>
   {% endif %}
 
-  {% for m in matches %}
-    {% set job = m.job %}
-    {% set pct = (m.score * 100)|round %}
-    <div class="p-4 border rounded-lg bg-white shadow-sm">
+  {% for r in results %}
+    {% set job = r.job %}
+    {% set pct = (r.score * 100)|round %}
+    <div class="job-card p-4 border rounded-lg bg-white shadow-sm"
+         data-score="{{ r.score }}" data-posted="{{ job.posted_at.timestamp() if job.posted_at else 0 }}">
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
-          {% if job.url %}<a href="{{ job.url }}" target="_blank" class="font-semibold text-slate-900 hover:underline">{% endif %}
-            {{ job.title[:100] }}
-          {% if job.url %}</a>{% endif %}
+          <div class="font-semibold text-slate-900">{{ job.title[:100] }}</div>
           <div class="text-sm text-slate-500 truncate">
-            {{ job.company or '—' }} · {{ job.location or 'Remote / —' }} · {{ job.source }}{% if job.remote %} · Remote{% endif %}
+            {{ job.company or '—' }} · {{ job.location or 'Remote / —' }}{% if job.remote %} · Remote{% endif %} · {{ job.source }} · {{ job.posted_at.strftime('%b %d, %Y') if job.posted_at else 'date n/a' }}
           </div>
+          <div class="mt-1"><span class="text-[11px] font-medium uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{{ r.seniority }}</span></div>
         </div>
         <div class="text-right shrink-0">
           <div class="text-2xl font-bold text-emerald-600">{{ pct }}%</div>
@@ -32,15 +40,59 @@
         <div class="h-full bg-emerald-500" style="width: {{ pct }}%"></div>
       </div>
 
-      <div class="mt-2 flex flex-wrap gap-2 text-xs">
-        <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600">keyword {{ (m.keyword_score*100)|round }}%</span>
-        <span class="px-2 py-0.5 bg-slate-100 rounded text-slate-600">semantic {{ (m.embedding_score*100)|round }}%</span>
-        {% if m.llm_score is not none %}
-          <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">LLM {{ (m.llm_score*100)|round }}%</span>
+      {% if r.matched or r.missing %}
+      <div class="mt-3 space-y-2">
+        {% if r.matched %}
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs text-emerald-700 font-medium mr-1">✓ Have</span>
+          {% for s in r.matched %}<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-xs">{{ s }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% if r.missing %}
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-xs text-amber-700 font-medium mr-1">✗ Gap</span>
+          {% for s in r.missing[:6] %}<span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs">{{ s }}</span>{% endfor %}
+          {% if r.missing|length > 6 %}<span class="text-xs text-slate-400">+{{ r.missing|length - 6 }}</span>{% endif %}
+        </div>
         {% endif %}
       </div>
+      {% endif %}
 
-      {% if m.rationale %}<p class="mt-2 text-sm text-slate-600">{{ m.rationale }}</p>{% endif %}
+      {% if r.rationale %}<p class="mt-2 text-sm text-slate-600">{{ r.rationale }}</p>{% endif %}
+
+      <div class="mt-3 flex items-center gap-3">
+        {% if job.url %}
+        <a href="{{ job.url }}" target="_blank" rel="noopener"
+           class="inline-block px-3 py-1.5 bg-slate-900 text-white rounded text-sm hover:bg-slate-700">Apply ↗</a>
+        {% else %}
+        <span class="text-xs text-slate-400">no direct apply link</span>
+        {% endif %}
+        <span class="text-xs text-slate-400">kw {{ (r.keyword_score*100)|round }}% · sem {{ (r.embedding_score*100)|round }}%{% if r.llm_score is not none %} · ai {{ (r.llm_score*100)|round }}%{% endif %}</span>
+      </div>
     </div>
   {% endfor %}
 </div>
+
+<script>
+  (function () {
+    const bar = document.getElementById("sortBar");
+    if (!bar) return;
+    const grid = document.getElementById("results");
+    const cards = Array.from(grid.querySelectorAll(".job-card"));
+    bar.addEventListener("click", function (e) {
+      const btn = e.target.closest(".sort-btn");
+      if (!btn) return;
+      bar.querySelectorAll(".sort-btn").forEach(b => {
+        b.classList.remove("bg-slate-900", "text-white");
+      });
+      btn.classList.add("bg-slate-900", "text-white");
+      const key = btn.dataset.sort;
+      cards.sort((a, b) =>
+        key === "score"
+          ? parseFloat(b.dataset.score) - parseFloat(a.dataset.score)
+          : parseFloat(b.dataset.posted) - parseFloat(a.dataset.posted)
+      );
+      cards.forEach(c => grid.appendChild(c));
+    });
+  })();
+</script>
