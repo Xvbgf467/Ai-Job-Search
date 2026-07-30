@@ -65,3 +65,4 @@ class Match(Base):
     rationale: Mapped[str | None] = mapped_column(Text, nullable=True)   # "why it matched"
 
     resume: Mapped["Resume"] = relationship(back_populates="matches")
+    job: Mapped["Job"] = relationship()
