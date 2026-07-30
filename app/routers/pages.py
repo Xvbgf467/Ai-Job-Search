@@ -47,6 +47,10 @@ async def match(
     name: str = Form(...),
     target_role: str | None = Form(None),
     years_experience: int | None = Form(None),
+    region: str | None = Form(None),
+    desired_skills: str | None = Form(None),
+    job_description: str | None = Form(None),
+    job_title: str | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
@@ -62,6 +66,8 @@ async def match(
         return templates.TemplateResponse(request, "error.html", {"message": str(exc)})
 
     candidate_level = seniority.years_to_level(resume.years_experience)
+    desired = [s.strip() for s in (desired_skills or "").split(",") if s.strip()]
+    is_jd = bool((job_description or "").strip())
 
     # Offload the CPU/LLM-heavy matching to a worker thread (own session) so the
     # event loop stays responsive. Build an enriched result with skill gaps.
@@ -71,7 +77,15 @@ async def match(
         session = SessionLocal()
         try:
             fresh = resume_service.get(session, resume_id)
-            matches = match_service.match_resume(session, fresh)
+            if is_jd:
+                return [
+                    match_service.match_job_description(
+                        fresh, job_title, job_description, region=region, desired_skills=desired
+                    )
+                ]
+            matches = match_service.match_resume(
+                session, fresh, region=region, desired_skills=desired
+            )
             resume_skills = {s.strip().lower() for s in (fresh.skills or "").split(",") if s.strip()}
             enriched: list[dict] = []
             for m in matches:
@@ -101,7 +115,10 @@ async def match(
         {
             "resume": resume,
             "results": results,
+            "mode": "jd" if is_jd else "pool",
             "candidate_level": candidate_level,
             "years": resume.years_experience,
+            "region": region,
+            "desired": desired,
         },
     )

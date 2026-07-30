@@ -1,10 +1,13 @@
 <div id="results" class="space-y-4">
   <div class="flex items-center justify-between flex-wrap gap-3">
-    <h2 class="text-xl font-bold">{{ results|length }} matched tech jobs
+    <h2 class="text-xl font-bold">
+      {% if mode == 'jd' %}Match against your job description{% else %}{{ results|length }} matched tech jobs{% endif %}
       <span class="text-sm font-normal text-slate-500">for {{ resume.name }}</span>
       {% if candidate_level %}
       <span class="ml-2 align-middle text-xs font-semibold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">{{ candidate_level }}{% if years is not none %} · {{ years }}y{% endif %}</span>
       {% endif %}
+      {% if region %}<span class="align-middle text-xs font-medium px-2 py-0.5 rounded bg-sky-100 text-sky-700">{{ region }}</span>{% endif %}
+      {% if desired %}<span class="align-middle text-xs font-medium px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">wants: {{ desired|join(', ') }}</span>{% endif %}
     </h2>
     <div class="flex gap-2 text-sm" id="sortBar">
       <button data-sort="score" class="sort-btn px-3 py-1 rounded border bg-slate-900 text-white">Best match</button>

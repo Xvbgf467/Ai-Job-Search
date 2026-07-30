@@ -13,8 +13,32 @@ from app.config import settings
 
 WEIGHTS = {"keyword": 0.4, "embedding": 0.4, "llm": 0.2}
 
+_REMOTE_TOKENS = {"remote", "anywhere", "worldwide"}
 
-def score_candidates(resume: Resume, jobs: list[Job]) -> list[dict]:
+
+def _region_factor(region: str | None, job: Job) -> float:
+    if not region:
+        return 1.0
+    r = region.strip().lower()
+    if r in _REMOTE_TOKENS:
+        return 1.05 if job.remote else 0.90
+    return 1.05 if r in (job.location or "").lower() else 0.92
+
+
+def _desired_factor(desired: list[str] | None, job_text_lower: str) -> float:
+    if not desired:
+        return 1.0
+    hits = sum(1 for s in desired if s and s.lower() in job_text_lower)
+    return 1.0 + min(0.15, hits * 0.03)
+
+
+def score_candidates(
+    resume: Resume,
+    jobs: list[Job],
+    *,
+    region: str | None = None,
+    desired_skills: list[str] | None = None,
+) -> list[dict]:
     # 1. tech-only filter: drop non-tech postings early
     tech_jobs = [j for j in jobs if is_tech_text(j.title, j.description)]
     if not tech_jobs:
@@ -23,6 +47,7 @@ def score_candidates(resume: Resume, jobs: list[Job]) -> list[dict]:
     # 2. per-job keyword + embedding scores
     resume_vec = embeddings.embed(resume.raw_text)
     job_texts = [f"{job.title}\n{job.description}" for job in tech_jobs]
+    job_texts_lower = [t.lower() for t in job_texts]
     job_vecs = embeddings.embed_batch(job_texts) if job_texts else []
     cand_level = seniority.years_to_level(resume.years_experience)
 
@@ -32,7 +57,11 @@ def score_candidates(resume: Resume, jobs: list[Job]) -> list[dict]:
         job_text = job_texts[idx]
         kw = 0.5 * keywords.keyword_score(resume, job_text) + 0.5 * keywords.skill_overlap(resume, job_text)
         emb = embeddings.similarity(resume_vec, job_vecs[idx])
-        factor = seniority.level_factor(cand_level, job.title)
+        factor = (
+            seniority.level_factor(cand_level, job.title)
+            * _region_factor(region, job)
+            * _desired_factor(desired_skills, job_texts_lower[idx])
+        )
         candidates.append(
             {
                 "job_id": job.id,
