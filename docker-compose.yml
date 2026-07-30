@@ -1,0 +1,13 @@
+services:
+  techmatch:
+    build: .
+    container_name: techmatch
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    environment:
+      - LLM_PROVIDER=zai
+      - LLM_MODEL=glm-4.5-flash
+      - LLM_BASE_URL=https://api.z.ai/api/paas/v4/
+    restart: unless-stopped

@@ -14,16 +14,19 @@ COPY pyproject.toml ./
 COPY app ./app
 COPY scripts ./scripts
 
-# CPU-only torch keeps the image small; then the rest of the dependencies
+# On x86_64 use the small CPU-only torch wheel; on ARM (e.g. Oracle Ampere)
+# let pip pick the aarch64 wheel from PyPI.
 RUN pip install --upgrade pip && \
-    pip install torch --index-url https://download.pytorch.org/whl/cpu && \
+    if [ "$(uname -m)" = "x86_64" ]; then \
+      pip install torch --index-url https://download.pytorch.org/whl/cpu; \
+    fi && \
     pip install .
 
 # Pre-download the embedding model so cold starts don't depend on the network
 RUN python -c "from sentence_transformers import SentenceTransformer; \
     SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 
-# HF Spaces runs containers as a non-root user (uid 1000)
+# Run as a non-root user (uid 1000) for portability across hosts
 RUN useradd -m -u 1000 user && chown -R user:user /app
 USER user
 

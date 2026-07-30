@@ -85,23 +85,39 @@ python scripts/match.py cv.docx --role ai_llm_engineer --fetch
 
 ## Deployment
 
-Containerized via Docker (image ~2.5 GB due to PyTorch + embeddings):
+Containerized via Docker (image ~2 GB due to PyTorch + embeddings). The app
+listens on `$PORT` (default **7860**) and seeds jobs on startup.
+
+Quick run:
 
 ```bash
+docker compose up -d --build      # uses docker-compose.yml + .env
+# or manually:
 docker build -t techmatch .
-docker run -p 8000:8000 \
-  -e LLM_PROVIDER=zai -e LLM_MODEL=glm-4.5-flash \
-  -e LLM_BASE_URL=https://api.z.ai/api/paas/v4/ -e LLM_API_KEY=... \
-  techmatch
+docker run -p 7860:7860 --env-file .env techmatch
 ```
 
-Provide `LLM_*` as secrets on the host (never bake the key into the image).
-The embedding model is pre-downloaded during build, so cold starts need no network.
+Put `LLM_*` in a `.env` file (never bake the key into the image). The embedding
+model is pre-downloaded during build, so cold starts need no network.
 
-Recommended hosts (need ~2 GB RAM for PyTorch):
-- **Hugging Face Spaces** (Docker) — free, ML-native, easiest demo.
-- **Oracle Cloud Always Free** (ARM VM, 24 GB RAM) — run the full stack for free.
-- **Railway / Fly.io / Koyeb** — Docker-native, ~$5/mo or free tier.
+### Oracle Cloud Always Free (recommended free host)
+
+The Ampere A1 VM (up to 4 OCPU / 24 GB RAM) runs the full PyTorch app for free.
+
+1. Create an Always Free account and an **VM.Standard.A1.Flex** instance
+   (Ubuntu 22.04). Note its public IP.
+2. In the OCI console open the VCN **Security List** ingress: `0.0.0.0/0` TCP `7860`.
+3. SSH in and run the one-shot setup script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Xvbgf467/Ai-Job-Search/main/deploy/oracle/setup.sh | bash
+# follow the prompts (install Docker, set LLM_API_KEY in .env), then re-run it
+```
+
+The app is then live at `http://<public-ip>:7860`.
+
+Other hosts (need ~2 GB RAM for PyTorch): **Hugging Face Spaces** (Docker, now
+requires Pro), **Railway / Fly.io / Koyeb** (~$5/mo or free tier).
 
 ## Status
 
