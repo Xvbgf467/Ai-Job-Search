@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechMatch</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+  <nav class="bg-slate-900 text-white px-6 py-3 flex items-center gap-6">
+    <a href="/" class="font-bold text-lg">TechMatch</a>
+    <a href="/" class="hover:underline">Dashboard</a>
+    <a href="/resume" class="hover:underline">Upload Resume</a>
+    <span class="ml-auto text-sm text-slate-300">tech jobs only</span>
+  </nav>
+  <main class="max-w-5xl mx-auto p-6">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

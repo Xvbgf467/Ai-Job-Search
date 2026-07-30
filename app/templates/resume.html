@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Upload your resume</h1>
+
+<form
+  hx-post="/api/resumes/upload"
+  hx-encoding="multipart/form-data"
+  hx-target="#out"
+  class="space-y-4 max-w-md"
+>
+  <label class="block">
+    <span class="text-sm text-slate-600">Your name</span>
+    <input name="name" required class="mt-1 w-full border rounded px-3 py-2">
+  </label>
+
+  <label class="block">
+    <span class="text-sm text-slate-600">Target role (optional)</span>
+    <select name="target_role" class="mt-1 w-full border rounded px-3 py-2">
+      <option value="">Auto-detect</option>
+      {% for r in roles %}
+        <option value="{{ r }}">{{ r }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label class="block">
+    <span class="text-sm text-slate-600">Resume file (PDF / DOCX / TXT)</span>
+    <input type="file" name="file" accept=".pdf,.docx,.txt" required
+           class="mt-1 w-full border rounded px-3 py-2">
+  </label>
+
+  <button class="px-4 py-2 bg-slate-900 text-white rounded">Parse &amp; Match</button>
+</form>
+
+<div id="out" class="mt-6"></div>
+{% endblock %}

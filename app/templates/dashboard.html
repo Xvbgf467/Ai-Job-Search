@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Matched Tech Jobs</h1>
+<p class="text-slate-500 mb-6">Ranked by hybrid score (keywords + semantics + optional LLM).</p>
+
+<div class="grid gap-3" id="results">
+  <div class="p-6 border rounded-lg text-slate-400 text-center">
+    Upload a resume to see matched jobs here.
+    <div class="mt-4">
+      <a href="/resume" class="inline-block px-4 py-2 bg-slate-900 text-white rounded">Upload Resume</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
