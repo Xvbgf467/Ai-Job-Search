@@ -116,6 +116,16 @@ curl -fsSL https://raw.githubusercontent.com/Xvbgf467/Ai-Job-Search/main/deploy/
 
 The app is then live at `http://<public-ip>:7860`.
 
+### Google Colab (free, temporary demo)
+
+No account beyond Google, no credit card. Open the notebook and **Run All**:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Xvbgf467/Ai-Job-Search/blob/main/notebooks/colab_demo.ipynb)
+
+It reuses Colab's bundled PyTorch (fast install), exposes the app via a free
+Cloudflare quick-tunnel, and prints a public URL. The URL is per-session — it
+dies when the Colab session disconnects/idles (re-run to restart).
+
 Other hosts (need ~2 GB RAM for PyTorch): **Hugging Face Spaces** (Docker, now
 requires Pro), **Railway / Fly.io / Koyeb** (~$5/mo or free tier).
 
