@@ -74,15 +74,39 @@ Final score = weighted blend. Filters: location, remote, salary, seniority, stac
 Matching only keeps jobs classified as tech roles; non-tech postings are dropped
 at the sourcing/normalization step.
 
+## CLI
+
+Match a resume from the terminal:
+
+```bash
+python scripts/match.py path/to/resume.pdf --name "Jane Doe" --top 10
+python scripts/match.py cv.docx --role ai_llm_engineer --fetch
+```
+
+## Deployment
+
+Containerized via Docker (image ~2.5 GB due to PyTorch + embeddings):
+
+```bash
+docker build -t techmatch .
+docker run -p 8000:8000 \
+  -e LLM_PROVIDER=zai -e LLM_MODEL=glm-4.5-flash \
+  -e LLM_BASE_URL=https://api.z.ai/api/paas/v4/ -e LLM_API_KEY=... \
+  techmatch
+```
+
+Provide `LLM_*` as secrets on the host (never bake the key into the image).
+The embedding model is pre-downloaded during build, so cold starts need no network.
+
+Recommended hosts (need ~2 GB RAM for PyTorch):
+- **Hugging Face Spaces** (Docker) — free, ML-native, easiest demo.
+- **Oracle Cloud Always Free** (ARM VM, 24 GB RAM) — run the full stack for free.
+- **Railway / Fly.io / Koyeb** — Docker-native, ~$5/mo or free tier.
+
 ## Status
 
-Scaffolding complete. Implementation order:
+Done: resume parsing, skill/role taxonomy, sourcing (Remotive + HN),
+keyword + embedding scorer, LLM re-rank (Z.AI GLM), dashboard UI,
+background fetcher, CLI, Docker.
 
-- [ ] Resume parsing (PDF/DOCX/TXT → structured profile)
-- [ ] Skill/role taxonomy
-- [ ] Sourcing adapters (start with Remotive + HN — no key / open)
-- [ ] Keyword + embedding scorer
-- [ ] LLM re-rank
-- [ ] Dashboard UI + filters
-- [ ] Background fetcher + persistence
-- [ ] Scrapers (LinkedIn/Indeed) — handle with care re: ToS
+Todo: dashboard filters, application tracking, LinkedIn/Indeed scrapers (mind ToS).
