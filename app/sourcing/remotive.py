@@ -3,7 +3,6 @@ import httpx
 from app.matching.taxonomy import is_tech_text
 
 BASE = "https://remotive.com/api/remote-jobs"
-TECH_CATEGORIES = {"software-dev", "data", "devops-sysadmin", "product", "qa"}
 
 
 def fetch_tech_jobs() -> list[dict]:
@@ -14,8 +13,6 @@ def fetch_tech_jobs() -> list[dict]:
 
     out: list[dict] = []
     for j in jobs:
-        if j.get("category", "").lower().replace(" ", "-") not in TECH_CATEGORIES:
-            continue
         if not is_tech_text(f"{j.get('title','')} {j.get('description','')}"):
             continue
         out.append(
